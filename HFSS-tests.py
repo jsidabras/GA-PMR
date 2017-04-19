@@ -6,11 +6,6 @@ from random import *
 import hycohanz as hfss
 from datetime import datetime
 startTime = datetime.now()
-#ScriptEnv.Initialize("Ansoft.ElectronicsDesktop")
-#oDesktop.RestoreWindow()
-#oProject = oDesktop.SetActiveProject("GA_PlanarResonator")
-#oDesign = oProject.SetActiveDesign("HFSSDesign1")
-#oEditor = oDesign.SetActiveEditor("3D Modeler")
 
 [oAnsoftApp, oDesktop] = hfss.setup_interface()
 oProject = hfss.get_active_project(oDesktop)
@@ -32,7 +27,7 @@ for i in thing:
         Vac.append("Planar_"+str(index))
         index += 1
 
-hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
+hfss.assign_IsModel(oEditor, Silv, MaterialName="silver", SolveInside=False, IsModel=True)
 hfss.assign_IsModel(oEditor, Vac, MaterialName="silver", SolveInside=False, IsModel=False)
 
 oProject.Save()
