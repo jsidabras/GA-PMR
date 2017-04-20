@@ -23,14 +23,13 @@ from deap import base
 from deap import creator
 from deap import tools
 
-# from random import *
-import random
 import hycohanz as hfss
 from datetime import datetime
+startTime = datetime.now()
 
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMax)
+creator.create("Individual", list, typecode='f', fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
 
@@ -43,7 +42,7 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 
 # Structure initializers
 #                         define 'individual' to be an individual
-#                         consisting of 100 'attr_bool' elements ('genes')
+#                         consisting of 2490 'attr_bool' elements ('genes')
 toolbox.register("individual", tools.initRepeat, creator.Individual, 
     toolbox.attr_bool, 2490)
 
@@ -64,16 +63,27 @@ def evalOneMax(individual):
     for i in individual:
         if i == 1:
             Silv.append("Planar_"+str(index))
-            index += 1
         else:
             Vac.append("Planar_"+str(index))
-            index += 1
+        index += 1
 
-    hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
-    hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
+    if Vac: 
+    # Check if list is empty
+    #    hfss.assign_IsModel(oEditor, Vac, IsModel=False)
+        hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
+    if Silv:
+    #    hfss.assign_IsModel(oEditor, Silv, IsModel=True)
+        hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
+
+    oDesktop.ClearMessages("", "", 3)
 
     # oProject.Save()
-    oDesign.Analyze("Setup1")
+    try:
+        oDesign.Analyze("Setup1")
+    except:
+        print("Simulation Error Set Fitness to 0")
+        return 0,
+
     hfss.enter_qty(oFieldsReporter, 'H')
     hfss.enter_qty(oFieldsReporter, 'H')
     hfss.calc_op(oFieldsReporter, 'Dot')
@@ -96,8 +106,8 @@ def evalOneMax(individual):
         0,
         {},
     )
-    
-    return out[0],
+    print(out[0])
+    return float(out[0]),
 
 #----------
 # Operator registration
@@ -125,7 +135,7 @@ def main():
 
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
-    pop = toolbox.population(n=10)
+    pop = toolbox.population(n=30)
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -201,6 +211,10 @@ def main():
     
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
+    print(datetime.now() - startTime)
+    f = open('best_individual', 'w')
+    f.write("%s" % (best_ind))
+    f.close()
 
 if __name__ == "__main__":
     main()
