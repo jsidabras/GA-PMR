@@ -44,7 +44,7 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 #                         define 'individual' to be an individual
 #                         consisting of 2490 'attr_bool' elements ('genes')
 toolbox.register("individual", tools.initRepeat, creator.Individual,
-    toolbox.attr_bool, 2490)
+    toolbox.attr_bool, 2486)
 
 # define the population to be a list of individuals
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
@@ -62,9 +62,9 @@ def evalOneMax(individual):
     Silv = []
     for i in individual:
         if i == 1:
-            Silv.append("Planar_"+str(index))
+            Silv.append("Elm_"+str(index))
         else:
-            Vac.append("Planar_"+str(index))
+            Vac.append("Elm_"+str(index))
         index += 1
 
     if Vac:
@@ -83,29 +83,62 @@ def evalOneMax(individual):
     except:
         print("Simulation Error Set Fitness to 0")
         return 0,
-
-    hfss.enter_qty(oFieldsReporter, 'H')
-    hfss.enter_qty(oFieldsReporter, 'H')
-    hfss.calc_op(oFieldsReporter, 'Dot')
-    hfss.calc_op(oFieldsReporter, 'Real')
-    hfss.enter_vol(oFieldsReporter, 'Sample')
-    hfss.calc_op(oFieldsReporter, 'Integrate')
-    hfss.clc_eval(
-        oFieldsReporter,
-        'Setup1',
-        'LastAdaptive',
-        9.7e9,
-        0,
-        {},
-    )
-    out = hfss.get_top_entry_value(
-        oFieldsReporter,
-        'Setup1',
-        'LastAdaptive',
-        9.7e9,
-        0,
-        {},
-    )
+    
+    try:
+        oFieldsReporter.CalcStack('clear')
+        hfss.enter_qty(oFieldsReporter, 'H')
+        hfss.enter_qty(oFieldsReporter, 'H')
+        hfss.calc_op(oFieldsReporter, 'Conj')
+        hfss.calc_op(oFieldsReporter, 'Dot')
+        hfss.calc_op(oFieldsReporter, 'Real')
+        hfss.enter_vol(oFieldsReporter, 'Sample')
+        hfss.calc_op(oFieldsReporter, 'Integrate')
+        hfss.clc_eval(
+            oFieldsReporter,
+            'Setup1',
+            'LastAdaptive',
+            9.7e9,
+            0,
+            {},
+        )
+        out = hfss.get_top_entry_value(
+            oFieldsReporter,
+            'Setup1',
+            'LastAdaptive',
+            9.7e9,
+            0,
+            {},
+        )
+    except:
+        try:
+            oDesign.Analyze("Setup1")
+            oFieldsReporter.CalcStack('clear')
+            hfss.enter_qty(oFieldsReporter, 'H')
+            hfss.enter_qty(oFieldsReporter, 'H')
+            hfss.calc_op(oFieldsReporter, 'Conj')
+            hfss.calc_op(oFieldsReporter, 'Dot')
+            hfss.calc_op(oFieldsReporter, 'Real')
+            hfss.enter_vol(oFieldsReporter, 'Sample')
+            hfss.calc_op(oFieldsReporter, 'Integrate')
+            hfss.clc_eval(
+                oFieldsReporter,
+                'Setup1',
+                'LastAdaptive',
+                9.7e9,
+                0,
+                {},
+            )
+            out = hfss.get_top_entry_value(
+                oFieldsReporter,
+                'Setup1',
+                'LastAdaptive',
+                9.7e9,
+                0,
+                {},
+            )
+        except:
+            print("Simulation Error Set Fitness to 0")
+            return 0,        
     print(out[0])
     return float(out[0]),
 
@@ -131,11 +164,12 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 #----------
 
 def main():
-    random.seed(64)
+    random.seed(13)
 
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
-    pop = toolbox.population(n=30)
+    
+    pop = toolbox.population(n=40)
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -206,13 +240,18 @@ def main():
         print("  Max %s" % max(fits))
         print("  Avg %s" % mean)
         print("  Std %s" % std)
+        #save progress
+        best_ind = tools.selBest(pop, 1)[0]
+        f = open(str(datetime.now().replace(" ","").replace(":","_")) + '_best_individual_Gen_' + str(g), 'w')
+        f.write("%s" % (best_ind))
+        f.close()
 
     print("-- End of (successful) evolution --")
 
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
-    f = open('best_individual', 'w')
+    f = open(str(datetime.now().replace(" ","").replace(":","_")) + '_best_individual', 'w')
     f.write("%s" % (best_ind))
     f.close()
 

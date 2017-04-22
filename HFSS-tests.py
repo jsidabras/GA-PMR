@@ -21,21 +21,20 @@ oFieldsReporter = hfss.get_module(oDesign, 'FieldsReporter')
 
 randBinList = lambda n: [randint(0,1) for b in range(1,n+1)]
 
-thing = randBinList(2490)
+thing = randBinList(2486)
 index = 0
 Vac = []
 Silv = []
 for i in thing:
     if i == 1:
-        Silv.append("Planar_"+str(index))
+        Silv.append("Elm_"+str(index))
         index += 1
     else:
-        Vac.append("Planar_"+str(index))
+        Vac.append("Elm_"+str(index))
         index += 1
 
 oDesktop.ClearMessages("", "", 3)
-
-        
+    
 if Vac: 
 # Check if list is empty
     # hfss.assign_White(oEditor, Silv)
@@ -44,11 +43,17 @@ if Silv:
     # hfss.assign_Orange(oEditor, Silv)
    hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
 
-
 # oProject.Save()
-oDesign.Analyze("Setup1")
+try:
+    oDesign.Analyze("Setup1")
+except:
+    print("Simulation Error Set Fitness to 0")
+    # return 0,
+
+oFieldsReporter.CalcStack('clear')
 hfss.enter_qty(oFieldsReporter, 'H')
 hfss.enter_qty(oFieldsReporter, 'H')
+hfss.calc_op(oFieldsReporter, 'Conj')
 hfss.calc_op(oFieldsReporter, 'Dot')
 hfss.calc_op(oFieldsReporter, 'Real')
 hfss.enter_vol(oFieldsReporter, 'Sample')
