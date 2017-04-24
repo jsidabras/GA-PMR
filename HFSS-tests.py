@@ -17,11 +17,14 @@ oProject = hfss.get_active_project(oDesktop)
 oDesign = hfss.set_active_design(oProject, 'HFSSDesign1')
 oEditor = hfss.set_active_editor(oDesign)
 oFieldsReporter = hfss.get_module(oDesign, 'FieldsReporter')
+oSolution = oDesign.GetModule("Solutions")
 
+oDesktop.EnableAutoSave(False)
 
 randBinList = lambda n: [randint(0,1) for b in range(1,n+1)]
 
 thing = randBinList(2486)
+print(thing)
 index = 0
 Vac = []
 Silv = []
@@ -44,8 +47,14 @@ if Silv:
    hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
 
 # oProject.Save()
+
+oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Silv, "NewPartsModelFlag:=", "Model"])
+oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Vac, "NewPartsModelFlag:=", "Model"])
+
+
 try:
     oDesign.Analyze("Setup1")
+    
 except:
     print("Simulation Error Set Fitness to 0")
     # return 0,
@@ -58,14 +67,25 @@ hfss.calc_op(oFieldsReporter, 'Dot')
 hfss.calc_op(oFieldsReporter, 'Real')
 hfss.enter_vol(oFieldsReporter, 'Sample')
 hfss.calc_op(oFieldsReporter, 'Integrate')
-hfss.clc_eval(
-    oFieldsReporter,
-    'Setup1',
-    'LastAdaptive',
-    9.7e9,
-    0,
-    {},
-)
+if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
+    hfss.clc_eval(
+        oFieldsReporter,
+        'Setup1',
+        'LastAdaptive',
+        9.7e9,
+        0,
+        {},
+    )
+else:
+    oDesign.Analyze("Setup1")
+    hfss.clc_eval(
+        oFieldsReporter,
+        'Setup1',
+        'LastAdaptive',
+        9.7e9,
+        0,
+        {},
+    )    
 out = hfss.get_top_entry_value(
     oFieldsReporter,
     'Setup1',

@@ -56,6 +56,10 @@ def evalOneMax(individual):
     oDesign = hfss.set_active_design(oProject, 'HFSSDesign1')
     oEditor = hfss.set_active_editor(oDesign)
     oFieldsReporter = hfss.get_module(oDesign, 'FieldsReporter')
+    oSolution = oDesign.GetModule("Solutions")
+
+    # Shut off autosave to minimize the .adresults folder
+    oDesktop.EnableAutoSave(False)
 
     index = 0
     Vac = []
@@ -76,23 +80,31 @@ def evalOneMax(individual):
         hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
 
     oDesktop.ClearMessages("", "", 3)
-
-    # oProject.Save()
+    # Purge History to minimize the solution time and minimize the .adresults folder
+    oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Silv, "NewPartsModelFlag:=", "Model"])
+    oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Vac, "NewPartsModelFlag:=", "Model"])
+    
+    
+    # Try to solve, if there is an error send it to zero. 
+    # ISSUE: If the RAMDisk is full this gives an error and sends everything to zero
+    # should be fixed with the PurgeHistory and AutoSave off... ??
     try:
         oDesign.Analyze("Setup1")
     except:
         print("Simulation Error Set Fitness to 0")
         return 0,
     
-    try:
-        oFieldsReporter.CalcStack('clear')
-        hfss.enter_qty(oFieldsReporter, 'H')
-        hfss.enter_qty(oFieldsReporter, 'H')
-        hfss.calc_op(oFieldsReporter, 'Conj')
-        hfss.calc_op(oFieldsReporter, 'Dot')
-        hfss.calc_op(oFieldsReporter, 'Real')
-        hfss.enter_vol(oFieldsReporter, 'Sample')
-        hfss.calc_op(oFieldsReporter, 'Integrate')
+    oFieldsReporter.CalcStack('clear')
+    hfss.enter_qty(oFieldsReporter, 'H')
+    hfss.enter_qty(oFieldsReporter, 'H')
+    hfss.calc_op(oFieldsReporter, 'Conj')
+    hfss.calc_op(oFieldsReporter, 'Dot')
+    hfss.calc_op(oFieldsReporter, 'Real')
+    hfss.enter_vol(oFieldsReporter, 'Sample')
+    hfss.calc_op(oFieldsReporter, 'Integrate')
+    # Is there a solution present? If so clc_eval if not, run the Analyze again
+    # if there is still no solution, send it to zero
+    if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
         hfss.clc_eval(
             oFieldsReporter,
             'Setup1',
@@ -101,25 +113,9 @@ def evalOneMax(individual):
             0,
             {},
         )
-        out = hfss.get_top_entry_value(
-            oFieldsReporter,
-            'Setup1',
-            'LastAdaptive',
-            9.7e9,
-            0,
-            {},
-        )
-    except:
-        try:
-            oDesign.Analyze("Setup1")
-            oFieldsReporter.CalcStack('clear')
-            hfss.enter_qty(oFieldsReporter, 'H')
-            hfss.enter_qty(oFieldsReporter, 'H')
-            hfss.calc_op(oFieldsReporter, 'Conj')
-            hfss.calc_op(oFieldsReporter, 'Dot')
-            hfss.calc_op(oFieldsReporter, 'Real')
-            hfss.enter_vol(oFieldsReporter, 'Sample')
-            hfss.calc_op(oFieldsReporter, 'Integrate')
+    else:
+        oDesign.Analyze("Setup1")
+        try: 
             hfss.clc_eval(
                 oFieldsReporter,
                 'Setup1',
@@ -127,18 +123,19 @@ def evalOneMax(individual):
                 9.7e9,
                 0,
                 {},
-            )
-            out = hfss.get_top_entry_value(
-                oFieldsReporter,
-                'Setup1',
-                'LastAdaptive',
-                9.7e9,
-                0,
-                {},
-            )
+            )    
         except:
             print("Simulation Error Set Fitness to 0")
             return 0,        
+    out = hfss.get_top_entry_value(
+        oFieldsReporter,
+        'Setup1',
+        'LastAdaptive',
+        9.7e9,
+        0,
+        {},
+    )
+
     print(out[0])
     return float(out[0]),
 
@@ -242,7 +239,7 @@ def main():
         print("  Std %s" % std)
         #save progress
         best_ind = tools.selBest(pop, 1)[0]
-        f = open(str(datetime.now().replace(" ","").replace(":","_")) + '_best_individual_Gen_' + str(g), 'w')
+        f = open(datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
         f.write("%s" % (best_ind))
         f.close()
 
@@ -251,7 +248,7 @@ def main():
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
-    f = open(str(datetime.now().replace(" ","").replace(":","_")) + '_best_individual', 'w')
+    f = open(datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
     f.write("%s" % (best_ind))
     f.close()
 
