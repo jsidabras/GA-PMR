@@ -175,7 +175,7 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 50
+    CXPB, MUTPB, NGEN = 0.6, 0.2, 50
 
     print("Start of evolution")
 
@@ -239,7 +239,7 @@ def main():
         print("  Std %s" % std)
         #save progress
         best_ind = tools.selBest(pop, 1)[0]
-        f = open(datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
+        f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
         f.write("%s" % (best_ind))
         f.close()
 
@@ -248,7 +248,7 @@ def main():
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
-    f = open(datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
+    f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final' + str(g), 'w')
     f.write("%s" % (best_ind))
     f.close()
 

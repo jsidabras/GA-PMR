@@ -59,6 +59,29 @@ except:
     print("Simulation Error Set Fitness to 0")
     # return 0,
 
+try:
+    oEditor.Delete("FaceList1")
+else:
+    print("No FaceList1")
+
+# Create FaceList1 for the solution set
+facelist = []
+facelist.extend(oEditor.GetFaceIDs("Gnd"))
+facelist.extend(oEditor.GetFaceIDs("Port1"))
+for element in Silv:
+    facelist.extend(oEditor.GetFaceIDs(element))
+
+oEditor.CreateEntityList(
+	[
+		"NAME:GeometryEntityListParameters",
+		"EntityType:="		, "Face",
+		"EntityList:="		, facelist
+	], 
+	[
+		"NAME:Attributes",
+		"Name:="		, "Facelist1"
+	])
+
 oFieldsReporter.CalcStack('clear')
 hfss.enter_qty(oFieldsReporter, 'H')
 hfss.enter_qty(oFieldsReporter, 'H')
