@@ -71,29 +71,30 @@ def evalOneMax(individual):
             Vac.append("Elm_"+str(index))
         index += 1
 
-    if Vac:
     # Check if list is empty
-    #    hfss.assign_IsModel(oEditor, Vac, IsModel=False)
+    if Vac:
         hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
     if Silv:
-    #    hfss.assign_IsModel(oEditor, Silv, IsModel=True)
         hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
 
     oDesktop.ClearMessages("", "", 3)
     # Purge History to minimize the solution time and minimize the .adresults folder
+    # Is this needed every time? 
     oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Silv, "NewPartsModelFlag:=", "Model"])
     oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Vac, "NewPartsModelFlag:=", "Model"])
-    
-    
+
+    # TODO: Add solutions results purge with shutil.rmtree
+
     # Try to solve, if there is an error send it to zero. 
     # ISSUE: If the RAMDisk is full this gives an error and sends everything to zero
     # should be fixed with the PurgeHistory and AutoSave off... ??
+    # Autosave off helps, but shutil.rmtree is needed
     try:
         oDesign.Analyze("Setup1")
     except:
         print("Simulation Error Set Fitness to 0")
         return 0,
-    
+    # TODO: need better fitness routine. Implement FaceList and maximize signal
     oFieldsReporter.CalcStack('clear')
     hfss.enter_qty(oFieldsReporter, 'H')
     hfss.enter_qty(oFieldsReporter, 'H')
@@ -115,7 +116,7 @@ def evalOneMax(individual):
         )
     else:
         oDesign.Analyze("Setup1")
-        try: 
+        try:
             hfss.clc_eval(
                 oFieldsReporter,
                 'Setup1',
@@ -123,10 +124,10 @@ def evalOneMax(individual):
                 9.7e9,
                 0,
                 {},
-            )    
+            )
         except:
             print("Simulation Error Set Fitness to 0")
-            return 0,        
+            return 0,
     out = hfss.get_top_entry_value(
         oFieldsReporter,
         'Setup1',
@@ -165,7 +166,7 @@ def main():
 
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
-    
+
     pop = toolbox.population(n=40)
 
     # CXPB  is the probability with which two individuals
@@ -242,6 +243,7 @@ def main():
         f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
         f.write("%s" % (best_ind))
         f.close()
+        # TODO Add function to colorize the best solution 
 
     print("-- End of (successful) evolution --")
 
