@@ -24,6 +24,7 @@ from deap import creator
 from deap import tools
 
 import hycohanz as hfss
+import shutil
 from datetime import datetime
 startTime = datetime.now()
 
@@ -49,6 +50,26 @@ toolbox.register("individual", tools.initRepeat, creator.Individual,
 # define the population to be a list of individuals
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
+# colorize the solution for visual of generation
+def colorize_best(individual):
+    [oAnsoftApp, oDesktop] = hfss.setup_interface()
+    oProject = hfss.get_active_project(oDesktop)
+    oDesign = hfss.set_active_design(oProject, 'HFSSDesign1')
+    oEditor = hfss.set_active_editor(oDesign)
+
+    index = 0
+    Vac = []
+    Silv = []
+    for i in individual:
+        if i == 1:
+            Silv.append("Elm_"+str(index))
+        else:
+            Vac.append("Elm_"+str(index))
+        index += 1  
+    
+    hfss.assign_White(oEditor, Vac)
+    hfss.assign_Orange(oEditor, Silv)
+    
 # the goal ('fitness') function to be maximized
 def evalOneMax(individual):
     [oAnsoftApp, oDesktop] = hfss.setup_interface()
@@ -83,8 +104,9 @@ def evalOneMax(individual):
     oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Silv, "NewPartsModelFlag:=", "Model"])
     oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Vac, "NewPartsModelFlag:=", "Model"])
 
-    # TODO: Add solutions results purge with shutil.rmtree
-
+    # Solutions results purge with shutil.rmtree
+    folder = "B:\\GA_PlanarResonator.aedtresults\\HFSSDesign1.results"
+    shutil.rmtree(folder)
     # Try to solve, if there is an error send it to zero. 
     # ISSUE: If the RAMDisk is full this gives an error and sends everything to zero
     # should be fixed with the PurgeHistory and AutoSave off... ??
@@ -94,15 +116,33 @@ def evalOneMax(individual):
     except:
         print("Simulation Error Set Fitness to 0")
         return 0,
-    # TODO: need better fitness routine. Implement FaceList and maximize signal
-    oFieldsReporter.CalcStack('clear')
-    hfss.enter_qty(oFieldsReporter, 'H')
-    hfss.enter_qty(oFieldsReporter, 'H')
-    hfss.calc_op(oFieldsReporter, 'Conj')
-    hfss.calc_op(oFieldsReporter, 'Dot')
-    hfss.calc_op(oFieldsReporter, 'Real')
-    hfss.enter_vol(oFieldsReporter, 'Sample')
-    hfss.calc_op(oFieldsReporter, 'Integrate')
+    # Implement FaceList and maximize signal
+    try:
+        oEditor.Delete("FaceList1")
+    else:
+        print("No FaceList1")
+
+    # Create FaceList1 for the solution set
+    facelist = []
+    facelist.extend(oEditor.GetFaceIDs("Gnd"))
+    facelist.extend(oEditor.GetFaceIDs("Port1"))
+    for element in Silv:
+        facelist.extend(oEditor.GetFaceIDs(element))
+
+    oEditor.CreateEntityList(
+        [
+            "NAME:GeometryEntityListParameters",
+            "EntityType:="		, "Face",
+            "EntityList:="		, facelist
+        ],
+        [
+            "NAME:Attributes",
+            "Name:="		, "Facelist1"
+        ])
+    # Load the pre solved calculator expressions. Some will delete when Fastlist is deleted
+    # Remember to set Ple to zero unless you are solving for the losses in the substrate
+    oFieldsReporter.LoadNamedExpressions("E:\\MPI\\Maxwell\\Projects\\PersonalLib\\_Signal_14 - Xband - ICE.clc", "Fields", ["ImDieHold", "ImDieSam", "Frq", "H1r", "H1rMax", "IntH1r2dVs", "Pls", "Plw", "Ple", "Ss", "Su"])
+    oFieldsReporter.CopyNamedExprToStack("Su")
     # Is there a solution present? If so clc_eval if not, run the Analyze again
     # if there is still no solution, send it to zero
     if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
@@ -167,7 +207,7 @@ def main():
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
 
-    pop = toolbox.population(n=40)
+    pop = toolbox.population(n=70)
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -176,7 +216,7 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.6, 0.2, 50
+    CXPB, MUTPB, NGEN = 0.65, 0.2, 40
 
     print("Start of evolution")
 
@@ -238,21 +278,25 @@ def main():
         print("  Max %s" % max(fits))
         print("  Avg %s" % mean)
         print("  Std %s" % std)
-        #save progress
+        # Save progress
         best_ind = tools.selBest(pop, 1)[0]
         f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
         f.write("%s" % (best_ind))
         f.close()
-        # TODO Add function to colorize the best solution 
+        # Colorize the best solution 
+        colorize_best(best_ind)
 
     print("-- End of (successful) evolution --")
 
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
+    # Save best individual final
     f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final' + str(g), 'w')
     f.write("%s" % (best_ind))
     f.close()
+    # Colorize the final best individual 
+    colorize_best(best_ind)
 
 if __name__ == "__main__":
     main()
