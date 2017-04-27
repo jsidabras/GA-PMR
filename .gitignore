@@ -2,6 +2,7 @@
 # Upload directory but keep empty
 Solutions/*
 .DS_Store
+*best_individual*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
