@@ -45,7 +45,7 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 #                         define 'individual' to be an individual
 #                         consisting of 2490 'attr_bool' elements ('genes')
 toolbox.register("individual", tools.initRepeat, creator.Individual,
-    toolbox.attr_bool, 2486)
+    toolbox.attr_bool, 3752)
 
 # define the population to be a list of individuals
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
@@ -100,9 +100,9 @@ def evalOneMax(individual):
 
     oDesktop.ClearMessages("", "", 3)
     # Purge History to minimize the solution time and minimize the .adresults folder
-    # Is this needed every time? 
-    oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Silv, "NewPartsModelFlag:=", "Model"])
-    oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Vac, "NewPartsModelFlag:=", "Model"])
+    # Is this needed every time? Modeler -> PurgeHistory
+    #oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Silv, "NewPartsModelFlag:=", "Model"])
+    #oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Vac, "NewPartsModelFlag:=", "Model"])
 
     # Solutions results purge with shutil.rmtree
     folder = "B:\\GA_PlanarResonator.aedtresults\\HFSSDesign1.results"
@@ -116,33 +116,12 @@ def evalOneMax(individual):
     except:
         print("Simulation Error Set Fitness to 0")
         return 0,
-    # Implement FaceList and maximize signal
-    try:
-        oEditor.Delete("FaceList1")
-    else:
-        print("No FaceList1")
-
-    # Create FaceList1 for the solution set
-    facelist = []
-    facelist.extend(oEditor.GetFaceIDs("Gnd"))
-    facelist.extend(oEditor.GetFaceIDs("Port1"))
-    for element in Silv:
-        facelist.extend(oEditor.GetFaceIDs(element))
-
-    oEditor.CreateEntityList(
-        [
-            "NAME:GeometryEntityListParameters",
-            "EntityType:="		, "Face",
-            "EntityList:="		, facelist
-        ],
-        [
-            "NAME:Attributes",
-            "Name:="		, "Facelist1"
-        ])
+        
+    oFieldsReporter.CalcStack('clear')
     # Load the pre solved calculator expressions. Some will delete when Fastlist is deleted
     # Remember to set Ple to zero unless you are solving for the losses in the substrate
-    oFieldsReporter.LoadNamedExpressions("E:\\MPI\\Maxwell\\Projects\\PersonalLib\\_Signal_14 - Xband - ICE.clc", "Fields", ["ImDieHold", "ImDieSam", "Frq", "H1r", "H1rMax", "IntH1r2dVs", "Pls", "Plw", "Ple", "Ss", "Su"])
-    oFieldsReporter.CopyNamedExprToStack("Su")
+    #oFieldsReporter.LoadNamedExpressions("E:\\MPI\\Maxwell\\Projects\\PersonalLib\\_Signal_14 - Xband - ICE.clc", "Fields", ["ImDieHold", "ImDieSam", "Frq", "H1r", "H1rMax", "IntH1r2dVs"])
+    oFieldsReporter.CopyNamedExprToStack("IntH1r2dVs")
     # Is there a solution present? If so clc_eval if not, run the Analyze again
     # if there is still no solution, send it to zero
     if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
@@ -216,7 +195,7 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.65, 0.2, 40
+    CXPB, MUTPB, NGEN = 0.65, 0.2, 30
 
     print("Start of evolution")
 

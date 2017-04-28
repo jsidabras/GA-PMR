@@ -23,7 +23,7 @@ oDesktop.EnableAutoSave(False)
 
 randBinList = lambda n: [randint(0,1) for b in range(1,n+1)]
 
-thing = randBinList(2486)
+thing = randBinList(1)
 print(thing)
 index = 0
 Vac = []
@@ -58,38 +58,14 @@ try:
 except:
     print("Simulation Error Set Fitness to 0")
     # return 0,
-
-try:
-    oEditor.Delete("FaceList1")
-else:
-    print("No FaceList1")
-
-# Create FaceList1 for the solution set
-facelist = []
-facelist.extend(oEditor.GetFaceIDs("Gnd"))
-facelist.extend(oEditor.GetFaceIDs("Port1"))
-for element in Silv:
-    facelist.extend(oEditor.GetFaceIDs(element))
-
-oEditor.CreateEntityList(
-	[
-		"NAME:GeometryEntityListParameters",
-		"EntityType:="		, "Face",
-		"EntityList:="		, facelist
-	], 
-	[
-		"NAME:Attributes",
-		"Name:="		, "Facelist1"
-	])
-
+    
 oFieldsReporter.CalcStack('clear')
-hfss.enter_qty(oFieldsReporter, 'H')
-hfss.enter_qty(oFieldsReporter, 'H')
-hfss.calc_op(oFieldsReporter, 'Conj')
-hfss.calc_op(oFieldsReporter, 'Dot')
-hfss.calc_op(oFieldsReporter, 'Real')
-hfss.enter_vol(oFieldsReporter, 'Sample')
-hfss.calc_op(oFieldsReporter, 'Integrate')
+# Load the pre solved calculator expressions. Some will delete when Fastlist is deleted
+# Remember to set Ple to zero unless you are solving for the losses in the substrate
+#oFieldsReporter.LoadNamedExpressions("E:\\MPI\\Maxwell\\Projects\\PersonalLib\\_Signal_14 - Xband - ICE.clc", "Fields", ["ImDieHold", "ImDieSam", "Frq", "H1r", "H1rMax", "IntH1r2dVs"])
+oFieldsReporter.CopyNamedExprToStack("IntH1r2dVs")
+# Is there a solution present? If so clc_eval if not, run the Analyze again
+# if there is still no solution, send it to zero
 if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
     hfss.clc_eval(
         oFieldsReporter,

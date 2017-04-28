@@ -19,21 +19,22 @@ parser.add_argument('file', type=str, help='the filename to load')
 args = parser.parse_args()
 
 f = open(args.file, 'r')
-thing = f.readline()
+loadthing = f.readline()
 f.close()
 
-thing = []
-for i in range(1,len(loadthing),2):
-    out = loadthing[i]
-    thing.extend(out)
+print(loadthing)
 
+thing = loadthing.split(", ")
+
+print(thing)
 # Drop /n from the end of the list
-thing.pop()
+#thing.pop()
 
+index = 0
 Vac = []
 Silv = []
 for i in thing:
-    if i == '1' or i == 1:
+    if i == '1':
         Silv.append("Elm_"+str(index))
         index += 1
     else:
@@ -44,16 +45,17 @@ oDesktop.ClearMessages("", "", 3)
 
 # Check if list is empty
 if Vac:
-    hfss.assign_White(oEditor, Silv)
+    hfss.assign_White(oEditor, Vac)
     hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
 if Silv:
     hfss.assign_Orange(oEditor, Silv)
     hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
 
-try:
-    oDesign.Analyze("Setup1")
-except:
-    print("Simulation Error Set Fitness to 0")
-    return 0,
+oDesktop.ClearMessages("", "", 3)    
+# try:
+    #oDesign.Analyze("Setup1")
+# except:
+    # print("Simulation Error")
+
 
 oProject.Save()
