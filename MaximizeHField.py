@@ -114,8 +114,8 @@ def evalOneMax(individual):
     try:
         oDesign.Analyze("Setup1")
     except:
-        print("Simulation Error Set Fitness to 0")
-        return 0, 0
+        print("Simulation Error Set Fitness -10000, 10000")
+        return -10000, 10000
         
     oFieldsReporter.CalcStack('clear')
     # Load the pre solved calculator expressions. Some will delete when Fastlist is deleted
@@ -145,8 +145,8 @@ def evalOneMax(individual):
                 {},
             )
         except:
-            print("Simulation Error Set Fitness to 0")
-            return 0, 0
+            print("Simulation Error Set Fitness -1000, 1000")
+            return -1000, 1000
     outH = hfss.get_top_entry_value(
         oFieldsReporter,
         'Setup1',
@@ -180,8 +180,8 @@ def evalOneMax(individual):
                 {},
             )
         except:
-            print("Simulation Error Set Fitness to 0")
-            return 0, 0
+            print("Simulation Error Set Fitness -1, 100")
+            return -1, 100
     outE = hfss.get_top_entry_value(
         oFieldsReporter,
         'Setup1',
@@ -306,7 +306,7 @@ def main():
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
     # Save best individual final
-    f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final' + str(g), 'w')
+    f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final', 'w')
     f.write("%s" % (best_ind))
     f.close()
     # Colorize the final best individual 
