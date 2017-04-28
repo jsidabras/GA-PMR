@@ -191,7 +191,7 @@ def evalOneMax(individual):
         {},
     )
     
-    print(outH[0] + ", " + outE)
+    print(outH[0] + ", " + outE[0])
     return float(outH[0]), float(outE[0])
 
 #----------
