@@ -29,7 +29,7 @@ from datetime import datetime
 startTime = datetime.now()
 
 
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("FitnessMax", base.Fitness, weights=(1.0,-0.5))
 creator.create("Individual", list, typecode='f', fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
@@ -115,7 +115,7 @@ def evalOneMax(individual):
         oDesign.Analyze("Setup1")
     except:
         print("Simulation Error Set Fitness to 0")
-        return 0,
+        return 0, 0
         
     oFieldsReporter.CalcStack('clear')
     # Load the pre solved calculator expressions. Some will delete when Fastlist is deleted
@@ -146,8 +146,8 @@ def evalOneMax(individual):
             )
         except:
             print("Simulation Error Set Fitness to 0")
-            return 0,
-    out = hfss.get_top_entry_value(
+            return 0, 0
+    outH = hfss.get_top_entry_value(
         oFieldsReporter,
         'Setup1',
         'LastAdaptive',
@@ -156,8 +156,43 @@ def evalOneMax(individual):
         {},
     )
 
-    print(out[0])
-    return float(out[0]),
+    oFieldsReporter.CopyNamedExprToStack("EdVs")
+    # Is there a solution present? If so clc_eval if not, run the Analyze again
+    # if there is still no solution, send it to zero
+    if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
+        hfss.clc_eval(
+            oFieldsReporter,
+            'Setup1',
+            'LastAdaptive',
+            9.7e9,
+            0,
+            {},
+        )
+    else:
+        oDesign.Analyze("Setup1")
+        try:
+            hfss.clc_eval(
+                oFieldsReporter,
+                'Setup1',
+                'LastAdaptive',
+                9.7e9,
+                0,
+                {},
+            )
+        except:
+            print("Simulation Error Set Fitness to 0")
+            return 0, 0
+    outE = hfss.get_top_entry_value(
+        oFieldsReporter,
+        'Setup1',
+        'LastAdaptive',
+        9.7e9,
+        0,
+        {},
+    )
+    
+    print(outH[0] + ", " + outE)
+    return float(outH[0]), float(outE[0])
 
 #----------
 # Operator registration
