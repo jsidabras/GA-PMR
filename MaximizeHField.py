@@ -29,7 +29,7 @@ from datetime import datetime
 startTime = datetime.now()
 
 
-creator.create("FitnessMax", base.Fitness, weights=(1.0,-0.5))
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, typecode='f', fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
@@ -114,8 +114,8 @@ def evalOneMax(individual):
     try:
         oDesign.Analyze("Setup1")
     except:
-        print("Simulation Error Set Fitness -10000, 10000")
-        return -10000, 10000
+        print("Simulation Error Set Fitness -10000, ")
+        return -10000, 
         
     oFieldsReporter.CalcStack('clear')
     # Load the pre solved calculator expressions. Some will delete when Fastlist is deleted
@@ -145,8 +145,8 @@ def evalOneMax(individual):
                 {},
             )
         except:
-            print("Simulation Error Set Fitness -1000, 1000")
-            return -1000, 1000
+            print("Simulation Error Set Fitness -1000, ")
+            return -1000, 
     outH = hfss.get_top_entry_value(
         oFieldsReporter,
         'Setup1',
@@ -180,8 +180,8 @@ def evalOneMax(individual):
                 {},
             )
         except:
-            print("Simulation Error Set Fitness -1, 100")
-            return -1, 100
+            print("Simulation Error Set Fitness -1, ")
+            return -1, 
     outE = hfss.get_top_entry_value(
         oFieldsReporter,
         'Setup1',
@@ -192,7 +192,7 @@ def evalOneMax(individual):
     )
     
     print(outH[0] + ", " + outE[0])
-    return float(outH[0]), float(outE[0])
+    return float(outH[0]),
 
 #----------
 # Operator registration
@@ -230,7 +230,7 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.65, 0.2, 30
+    CXPB, MUTPB, NGEN = 0.55, 0.2, 30
 
     print("Start of evolution")
 
@@ -296,6 +296,7 @@ def main():
         best_ind = tools.selBest(pop, 1)[0]
         f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
         f.write("%s" % (best_ind))
+        f.write("  Max %s" % max(fits))
         f.close()
         # Colorize the best solution 
         colorize_best(best_ind)
@@ -308,7 +309,9 @@ def main():
     # Save best individual final
     f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final', 'w')
     f.write("%s" % (best_ind))
+    f.write("  Max %s" % max(fits))
     f.close()
+    
     # Colorize the final best individual 
     colorize_best(best_ind)
 
