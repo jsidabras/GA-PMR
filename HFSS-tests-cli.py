@@ -11,7 +11,22 @@ from random import *
 from datetime import datetime
 startTime = datetime.now()
 import re
+import shutil
+import os
 import subprocess
+
+file = "B:\\GA_modify.aedtresults" 
+try:
+    shutil.rmtree(file)
+except:
+    pass
+
+files = ["B:\\tmp.fld", "B:\\GA_modify.aedt"]
+for file in files:
+    try:
+        os.remove(file)
+    except:
+        pass
 
 mat_re = re.compile("MaterialValue")
 start_re = re.compile("begin \'ToplevelParts\'")
@@ -79,9 +94,20 @@ with open("GA_PlanarResonator.aedt", "r") as f:
 file_out.close()
 
 
-cmdCommand = "ansysedt.exe -ng -batchsolve -batchextract Calc_output.py GA_modify.aedt"   #specify your cmd command
+cmdCommand = "ansysedt.exe -ng -BatchSolve GA_modify.aedt"   #specify your cmd command
 process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
 output, error = process.communicate()
-print(output)
+
+cmdCommand = "ansysedt.exe -ng -BatchSave -RunScriptAndExit Calc_output.py GA_modify.aedt"   #specify your cmd command
+process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
+output, error = process.communicate()
+
+with open("B:\\tmp.fld", "r") as out_file:
+    for line in out_file:
+        try:
+            print(float(line))
+        except:
+            continue
+
 
 print(datetime.now() - startTime)

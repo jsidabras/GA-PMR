@@ -23,6 +23,7 @@ from deap import creator
 from deap import tools
 
 import shutil
+import os
 import re
 import subprocess
 
@@ -51,7 +52,7 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 #                         define 'individual' to be an individual
 #                         consisting of 2490 'attr_bool' elements ('genes')
 toolbox.register("individual", tools.initRepeat, creator.Individual,
-    toolbox.attr_bool, 1721)
+    toolbox.attr_bool, 1767)
 
 # define the population to be a list of individuals
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
@@ -60,19 +61,23 @@ toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 def evalOneMax(individual):
     # Solutions results purge with shutil.rmtree
-    folder = "B:\\GA_modify.aedtresults"
-    shutil.rmtree(folder)
+    file = "B:\\GA_modify.aedtresults" 
+    try:
+        shutil.rmtree(file)
+    except:
+        pass
 
-
-
-    randBinList = lambda n: [randint(0,1) for b in range(1,n+1)]
-
-    thing = randBinList(1729)
+    files = ["B:\\tmp.fld", "B:\\GA_modify.aedt", "B:\\GA_modify.aedt.lock"]
+    for file in files:
+        try:
+            os.remove(file)
+        except:
+            pass
 
     index = 0
     list_vac = []
     list_pec = []
-    for i in thing:
+    for i in individual:
         if i == 1:
             list_pec.append("Elm_"+str(index)+"\'")
             index += 1
@@ -125,13 +130,25 @@ def evalOneMax(individual):
                 
     file_out.close()
 
-
-    cmdCommand = "ansysedt.exe -ng -batchsolve -batchextract Calc_output.py GA_modify.aedt"   #specify your cmd command
+    cmdCommand = "ansysedt.exe -ng -BatchSolve GA_modify.aedt"   #specify your cmd command
     process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
-    print(output)
+
+    cmdCommand = "ansysedt.exe -ng -BatchSave -RunScriptAndExit Calc_output.py GA_modify.aedt"   #specify your cmd command
+    process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
+    
+    with open("B:\\tmp.fld", "r") as out_file:
+        for line in out_file:
+            try:
+                print(float(line))
+                output = float(line)
+                break
+            except:
+                continue
+    
     print("Time: " + str(datetime.now() - startTime))
-    return float(outH[0]),
+    return output,
 
 #----------
 # Operator registration
@@ -160,7 +177,7 @@ def main():
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
 
-    pop = toolbox.population(n=40)
+    pop = toolbox.population(n=60)
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -169,7 +186,7 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.55, 0.3, 30
+    CXPB, MUTPB, NGEN = 0.55, 0.25, 30
 
     print("Start of evolution")
 
