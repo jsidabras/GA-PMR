@@ -90,40 +90,45 @@ def evalOneMax(individual):
     vac_re = re.compile("|".join(list_vac))
     pec_re = re.compile("|".join(list_pec))
 
-    file_out = open("GA_modify.aedt", 'w+')
-    with open("GA_PlanarResonator.aedt", "r") as f:
+    file_out = open("GA_modify.aedt", 'wb+')
+    with open("GA_PlanarResonator.aedt", "rb") as f:
         flag_start = 0
         flag_vac = 0
         flag_pec = 0
         try:
             for line in f:
-                if start_re.search(line):
+                try:
+                    line = line.decode('utf-8')
+                except:
                     file_out.write(line)
+                    continue
+                if start_re.search(line):
+                    file_out.write(line.encode('utf-8'))
                     flag_start = 1
                 elif end_re.search(line):
-                    file_out.write(line)
+                    file_out.write(line.encode('utf-8'))
                     flag_start = 0
                 elif vac_re.search(line) and flag_start == 1:
                     flag_vac = 1
-                    file_out.write(line)
+                    file_out.write(line.encode('utf-8'))
                     continue
                 elif pec_re.search(line) and flag_start == 1:
                     flag_pec = 1
-                    file_out.write(line)
+                    file_out.write(line.encode('utf-8'))
                     continue
                 else:
                     if flag_vac == 1 and mat_re.search(line):
-                        file_out.write(line.replace('pec', 'vacuum'))
+                        file_out.write(line.replace('pec', 'vacuum').encode('utf-8'))
                     elif flag_vac == 1 and slv_re.search(line):
-                        file_out.write(line.replace('false', 'true'))
+                        file_out.write(line.replace('false', 'true').encode('utf-8'))
                         flag_vac = 0
                     elif flag_pec == 1 and mat_re.search(line):
-                        file_out.write(line.replace('vacuum', 'pec'))
+                        file_out.write(line.replace('vacuum', 'pec').encode('utf-8'))
                     elif flag_pec == 1 and slv_re.search(line):
-                        file_out.write(line.replace('true', 'false'))
+                        file_out.write(line.replace('true', 'false').encode('utf-8'))
                         flag_pec = 0
                     else:
-                        file_out.write(line)
+                        file_out.write(line.encode('utf-8'))
         except UnicodeDecodeError:
             print("thing")
             
