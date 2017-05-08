@@ -16,57 +16,72 @@ import subprocess
 mat_re = re.compile("MaterialValue")
 start_re = re.compile("begin \'ToplevelParts\'")
 end_re = re.compile("end \'ToplevelParts\'")
+finish_re = re.compile("end \'AnsoftProject\'")
 
-randBinList = lambda n: [randint(0,1) for b in range(1,n+1)]
+# randBinList = lambda n: [randint(0,1) for b in range(1,n+1)]
 
-thing = randBinList(10)
+# thing = randBinList(1729)
 
-index = 0
-list_vac = []
-list_pec = []
-for i in thing:
-    if i == 1:
-        list_pec.append("Elm_"+str(index)+"\'")
-        index += 1
-    else:
-        list_vac.append("Elm_"+str(index)+"\'")
-        index += 1
+# index = 0
+# list_vac = []
+# list_pec = []
+# for i in thing:
+    # if i == 1:
+        # list_pec.append("Elm_"+str(index)+"\'")
+        # index += 1
+    # else:
+        # list_vac.append("Elm_"+str(index)+"\'")
+        # index += 1
 
+list_vac = ["Elm_1\'"]        
+list_pec = ["Elm_0\'"]
+        
 vac_re = re.compile("|".join(list_vac))
 pec_re = re.compile("|".join(list_pec))
 
-file_out = open("GA_modify.aedt", 'w+')
-with open("GA_PlanarResonator.aedt") as f:
+file_out = open("GA_modify.aedt", 'wb+')
+with open("GA_PlanarResonator.aedt", "rb") as f:
     flag_start = 0
     flag_vac = 0
     flag_pec = 0
     for line in f:
+        try:
+            line = line.decode('utf-8')
+        except UnicodeDecodeError:
+            file_out.write(line)
+            continue
+        # if finish_re.search(line):
+            # file_out.write(line.encode('utf-8'))
+            # break
         if start_re.search(line):
             flag_start = 1
         elif end_re.search(line):
             flag_start = 0
         elif vac_re.search(line) and flag_start == 1:
             flag_vac = 1
-            file_out.write(line)
+            file_out.write(line.encode('utf-8'))
             continue
         elif pec_re.search(line) and flag_start == 1:
             flag_pec = 1
-            file_out.write(line)
+            file_out.write(line.encode('utf-8'))
             continue
         else:
             if flag_vac == 1 and mat_re.search(line):
-                file_out.write(line.replace('pec', 'vacuum'))
+                file_out.write(line.replace('pec', 'vacuum').encode('utf-8'))
                 flag_vac = 0
             elif flag_pec == 1 and mat_re.search(line):
-                file_out.write(line.replace('vacuum', 'pec'))
+                file_out.write(line.replace('vacuum', 'pec').encode('utf-8'))
                 flag_pec = 0
             else:
-                file_out.write(line)
+                file_out.write(line.encode('utf-8'))
 file_out.close()
 
-cmdCommand = "ansysedt.exe -ng -local -batchsolve -batchextract Calc_output.py GA_modify.aedt"   #specify your cmd command
-process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE)
-output, error = process.communicate()
-print output
+# with open("GA_modify.aedt", "ab") as fo:
+    # with open("GA_backend.out",'rb') as fi: fo.write(fi.read())
+
+# cmdCommand = "ansysedt.exe -ng -local -batchsolve -batchextract Calc_output.py GA_modify.aedt"   #specify your cmd command
+# process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
+# output, error = process.communicate()
+# print(output)
 
 print(datetime.now() - startTime)

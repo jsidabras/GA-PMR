@@ -24,11 +24,14 @@ f.close()
 
 print(loadthing)
 
-dump = loadthing.strip("[").strip("]")split(", ")
+dump = loadthing.strip("[")
+dump = dump.rstrip()
+dump = dump.strip(r"']").split(", ")
 thing = []
 for i in dump:
     thing.append(int(i))
-    
+
+print(len(dump))
 index = 0
 Vac = []
 Silv = []
@@ -48,9 +51,9 @@ if Vac:
     hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
 if Silv:
     hfss.assign_Orange(oEditor, Silv)
-    hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
+    hfss.assign_material(oEditor, Silv, MaterialName="pec", SolveInside=False)
 
-oDesktop.ClearMessages("", "", 3)    
+oDesktop.ClearMessages("", "", 3)
 # try:
     #oDesign.Analyze("Setup1")
 # except:
