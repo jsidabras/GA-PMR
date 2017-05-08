@@ -23,7 +23,7 @@ oDesktop.EnableAutoSave(False)
 
 randBinList = lambda n: [randint(0,1) for b in range(1,n+1)]
 
-thing = randBinList(1)
+thing = randBinList(1721)
 print(thing)
 index = 0
 Vac = []
@@ -37,14 +37,15 @@ for i in thing:
         index += 1
 
 oDesktop.ClearMessages("", "", 3)
-    
+
 if Vac: 
 # Check if list is empty
     # hfss.assign_White(oEditor, Silv)
+    
     hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
 if Silv:
     # hfss.assign_Orange(oEditor, Silv)
-   hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
+   hfss.assign_material(oEditor, Silv, MaterialName="pec", SolveInside=False)
 
 # oProject.Save()
 

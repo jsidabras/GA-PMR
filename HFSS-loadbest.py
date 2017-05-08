@@ -24,17 +24,16 @@ f.close()
 
 print(loadthing)
 
-thing = loadthing.split(", ")
-
-print(thing)
-# Drop /n from the end of the list
-#thing.pop()
-
+dump = loadthing.strip("[").strip("]")split(", ")
+thing = []
+for i in dump:
+    thing.append(int(i))
+    
 index = 0
 Vac = []
 Silv = []
 for i in thing:
-    if i == '1':
+    if i == 1:
         Silv.append("Elm_"+str(index))
         index += 1
     else:

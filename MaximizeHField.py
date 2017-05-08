@@ -1,5 +1,4 @@
-#    This file is part of DEAP.
-#
+
 #    DEAP is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as
 #    published by the Free Software Foundation, either version 3 of
@@ -45,7 +44,7 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 #                         define 'individual' to be an individual
 #                         consisting of 2490 'attr_bool' elements ('genes')
 toolbox.register("individual", tools.initRepeat, creator.Individual,
-    toolbox.attr_bool, 3752)
+    toolbox.attr_bool, 1721)
 
 # define the population to be a list of individuals
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
@@ -94,9 +93,11 @@ def evalOneMax(individual):
 
     # Check if list is empty
     if Vac:
+        #hfss.assign_IsModel(oEditor, Vac, IsModel=False)
         hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
     if Silv:
-        hfss.assign_material(oEditor, Silv, MaterialName="silver", SolveInside=False)
+        # hfss.assign_IsModel(oEditor, Silv, IsModel=True)
+        hfss.assign_material(oEditor, Silv, MaterialName="pec", SolveInside=False)
 
     oDesktop.ClearMessages("", "", 3)
     # Purge History to minimize the solution time and minimize the .adresults folder
@@ -156,42 +157,44 @@ def evalOneMax(individual):
         {},
     )
 
-    oFieldsReporter.CopyNamedExprToStack("EdVs")
+    #oFieldsReporter.CopyNamedExprToStack("EdVs")
     # Is there a solution present? If so clc_eval if not, run the Analyze again
     # if there is still no solution, send it to zero
-    if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
-        hfss.clc_eval(
-            oFieldsReporter,
-            'Setup1',
-            'LastAdaptive',
-            9.7e9,
-            0,
-            {},
-        )
-    else:
-        oDesign.Analyze("Setup1")
-        try:
-            hfss.clc_eval(
-                oFieldsReporter,
-                'Setup1',
-                'LastAdaptive',
-                9.7e9,
-                0,
-                {},
-            )
-        except:
-            print("Simulation Error Set Fitness -1, ")
-            return -1, 
-    outE = hfss.get_top_entry_value(
-        oFieldsReporter,
-        'Setup1',
-        'LastAdaptive',
-        9.7e9,
-        0,
-        {},
-    )
+    # if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
+        # hfss.clc_eval(
+            # oFieldsReporter,
+            # 'Setup1',
+            # 'LastAdaptive',
+            # 9.7e9,
+            # 0,
+            # {},
+        # )
+    # else:
+        # oDesign.Analyze("Setup1")
+        # try:
+            # hfss.clc_eval(
+                # oFieldsReporter,
+                # 'Setup1',
+                # 'LastAdaptive',
+                # 9.7e9,
+                # 0,
+                # {},
+            # )
+        # except:
+            # print("Simulation Error Set Fitness -1, ")
+            # return -1, 
+    # outE = hfss.get_top_entry_value(
+        # oFieldsReporter,
+        # 'Setup1',
+        # 'LastAdaptive',
+        # 9.7e9,
+        # 0,
+        # {},
+    # )
     
-    print(outH[0] + ", " + outE[0])
+    # print(outH[0] + ", " + outE[0])
+    print(outH[0])
+    print("Time: " + str(datetime.now() - startTime))
     return float(outH[0]),
 
 #----------
@@ -216,12 +219,12 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 #----------
 
 def main():
-    random.seed(13)
+    random.seed(42)
 
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
 
-    pop = toolbox.population(n=70)
+    pop = toolbox.population(n=40)
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -230,7 +233,7 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.55, 0.2, 30
+    CXPB, MUTPB, NGEN = 0.55, 0.3, 30
 
     print("Start of evolution")
 
@@ -295,11 +298,12 @@ def main():
         # Save progress
         best_ind = tools.selBest(pop, 1)[0]
         f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
-        f.write("%s" % (best_ind))
+        f.write("%s\n" % (best_ind))
         f.write("  Max %s" % max(fits))
         f.close()
         # Colorize the best solution 
-        colorize_best(best_ind)
+        # colorize_best(best_ind)
+        print("Time: " + str(datetime.now() - startTime))
 
     print("-- End of (successful) evolution --")
 
@@ -308,7 +312,7 @@ def main():
     print(datetime.now() - startTime)
     # Save best individual final
     f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final', 'w')
-    f.write("%s" % (best_ind))
+    f.write("%s\n" % (best_ind))
     f.write("  Max %s" % max(fits))
     f.close()
     
