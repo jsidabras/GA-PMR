@@ -27,6 +27,7 @@ import os
 import re
 import subprocess
 
+
 mat_re = re.compile("MaterialValue")
 start_re = re.compile("begin \'ToplevelParts\'")
 end_re = re.compile("end \'ToplevelParts\'")
@@ -135,25 +136,25 @@ def evalOneMax(individual):
                 
     file_out.close()
 
-    cmdCommand = "ansysedt.exe -ng -BatchSolve GA_modify.aedt"   #specify your cmd command
+    cmdCommand = "ansysedt.exe -ng -WaitForLicense -RunScriptAndExit Calc_output.py -BatchSave GA_modify.aedt"   #specify your cmd command
     process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
 
-    cmdCommand = "ansysedt.exe -ng -BatchSave -RunScriptAndExit Calc_output.py GA_modify.aedt"   #specify your cmd command
-    process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
-    output, error = process.communicate()
-    
-    with open("B:\\tmp.fld", "r") as out_file:
-        for line in out_file:
-            try:
-                print(float(line))
-                output = float(line)
-                break
-            except:
-                continue
-    
-    print("Time: " + str(datetime.now() - startTime))
-    return output,
+    try:
+        with open("B:\\tmp.fld", "r") as out_file:
+            for line in out_file:
+                try:
+                    print(float(line))
+                    output = float(line)
+                    break
+                except:
+                    continue
+        
+
+        return output,
+    except:
+        print ("No tmp.fld, failed solution?")
+        return 0,
 
 #----------
 # Operator registration
@@ -255,12 +256,11 @@ def main():
         print("  Std %s" % std)
         # Save progress
         best_ind = tools.selBest(pop, 1)[0]
-        f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
+        f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w+')
         f.write("%s\n" % (best_ind))
         f.write("  Max %s" % max(fits))
         f.close()
-        # Colorize the best solution 
-        # colorize_best(best_ind)
+
         print("Time: " + str(datetime.now() - startTime))
 
     print("-- End of (successful) evolution --")
@@ -269,13 +269,11 @@ def main():
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
     # Save best individual final
-    f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final', 'w')
+    f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final', 'w+')
     f.write("%s\n" % (best_ind))
     f.write("  Max %s" % max(fits))
     f.close()
-    
-    # Colorize the final best individual 
-    colorize_best(best_ind)
+
 
 if __name__ == "__main__":
     main()
