@@ -13,11 +13,10 @@
 #    License along with DEAP. If not, see <http://www.gnu.org/licenses/>.
 
 
-
 #    Highly modified by Jason W. Sidabras jason.sidabras@cec.mpg.de
-#    maximize H field in a sample
+#    maximize H field in a sample and maximize the uniformity
 #    this is used to find non-obvious solutions to the planar micro resonator
-#    turns elements to silver (1) or vacuum (0)
+#    turns elements to silver (1) or deletes them (0)
 
 import random
 
@@ -30,7 +29,6 @@ import os
 import re
 import subprocess
 
-
 mat_re = re.compile("MaterialValue")
 start_re = re.compile("begin \'ToplevelParts\'")
 end_re = re.compile("end \'ToplevelParts\'")
@@ -40,7 +38,7 @@ from datetime import datetime
 startTime = datetime.now()
 
 
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("FitnessMax", base.Fitness, weights=(0.75,1.0,))
 creator.create("Individual", list, typecode='f', fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
@@ -56,28 +54,28 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 #                         define 'individual' to be an individual
 #                         consisting of 2490 'attr_bool' elements ('genes')
 toolbox.register("individual", tools.initRepeat, creator.Individual,
-    toolbox.attr_bool, 1767)
+    toolbox.attr_bool, 1759)
 
 # define the population to be a list of individuals
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-# colorize the solution for visual of generation
 
 def evalOneMax(individual):
     # Solutions results purge with shutil.rmtree
-    file = "B:\\GA_modify.aedtresults" 
+    file = "B:\\GA_modify2D.aedtresults" 
     try:
         shutil.rmtree(file)
     except:
         pass
-
-    files = ["B:\\tmp.fld", "B:\\GA_modify.aedt", "B:\\GA_modify.aedt.lock"]
+    # Purge files that are no longer needed for newest solution
+    files = ["B:\\tmp.fld", "B:\\tmp2.fld", "B:\\GA_modify2D.aedt", "B:\\GA_modify2D.aedt.lock"]
     for file in files:
         try:
             os.remove(file)
         except:
             pass
-
+    # build the list of PEC and Vacuum elements. 
+    # vacuum elements will be "turned off" and not appear in the solution
     index = 0
     list_vac = []
     list_pec = []
@@ -89,15 +87,15 @@ def evalOneMax(individual):
             list_vac.append("Elm_"+str(index)+"\'")
             index += 1
 
-
-            
+    # create regex to find the lists in the aedt file
     vac_re = re.compile("|".join(list_vac))
     pec_re = re.compile("|".join(list_pec))
 
-    file_out = open("GA_modify.aedt", 'wb+')
+    # leave the main file alone, create a copy and modity that 
+    file_out = open("GA_modify2D.aedt", 'wb+')
     with open("GA_PlanarResonator.aedt", "rb") as f:
-        flag_start = 0
-        flag_vac = 0
+        # flags to step through aedt file
+        flag_start = 0 
         flag_pec = 0
         try:
             for line in f:
@@ -113,20 +111,14 @@ def evalOneMax(individual):
                     file_out.write(line.encode('utf-8'))
                     flag_start = 0
                 elif vac_re.search(line) and flag_start == 1:
-                    flag_vac = 1
-                    file_out.write(line.encode('utf-8'))
+                    file_out.write(line.replace('Name', 'Nme').encode('utf-8'))
                     continue
                 elif pec_re.search(line) and flag_start == 1:
                     flag_pec = 1
-                    file_out.write(line.encode('utf-8'))
+                    file_out.write(line.replace('Nme', 'Name').encode('utf-8'))
                     continue
                 else:
-                    if flag_vac == 1 and mat_re.search(line):
-                        file_out.write(line.replace('pec', 'vacuum').encode('utf-8'))
-                    elif flag_vac == 1 and slv_re.search(line):
-                        file_out.write(line.replace('false', 'true').encode('utf-8'))
-                        flag_vac = 0
-                    elif flag_pec == 1 and mat_re.search(line):
+                    if flag_pec == 1 and mat_re.search(line):
                         file_out.write(line.replace('vacuum', 'pec').encode('utf-8'))
                     elif flag_pec == 1 and slv_re.search(line):
                         file_out.write(line.replace('true', 'false').encode('utf-8'))
@@ -134,12 +126,12 @@ def evalOneMax(individual):
                     else:
                         file_out.write(line.encode('utf-8'))
         except UnicodeDecodeError:
-            print("thing")
+            print("thing")  
             
                 
     file_out.close()
 
-    cmdCommand = "ansysedt.exe -ng -WaitForLicense -RunScriptAndExit Calc_output.py -BatchSave GA_modify.aedt"   #specify your cmd command
+    cmdCommand = "ansysedt.exe -ng -WaitForLicense -RunScriptAndExit Calc_output_vdel.py -BatchSave GA_modify2D.aedt"   #specify your cmd command
     process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
 
@@ -147,17 +139,33 @@ def evalOneMax(individual):
         with open("B:\\tmp.fld", "r") as out_file:
             for line in out_file:
                 try:
-                    print(float(line))
-                    output = float(line)
+                    print("Max B1: " + str(float(line)))
+                    outputHmax = float(line)
                     break
                 except:
                     continue
-        
-
-        return output,
     except:
         print ("No tmp.fld, failed solution?")
-        return 0,
+        return 0,0,
+    # only use the Su if the outputeHmax is "high enough"
+    # otherwise it give a non-answer because Hmax Have are very similar
+    if outputHmax:
+        try:
+            with open("B:\\tmp2.fld", "r") as out_file:
+                for line in out_file:
+                    try:
+                        print("Signal: " + str(float(line)))
+                        outputUni = float(line)
+                        break
+                    except:
+                        continue
+        except:
+            print ("No tmp2.fld, set to 0")
+            return outputHMax,0,
+    else:
+        outputUni = 0
+        
+    return outputHmax,outputUni,
 
 #----------
 # Operator registration
@@ -169,24 +177,29 @@ toolbox.register("evaluate", evalOneMax)
 toolbox.register("mate", tools.cxTwoPoint)
 
 # register a mutation operator with a probability to
-# flip each attribute/gene of 0.05
-toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+# flip each attribute/gene of 0.25
+toolbox.register("mutate", tools.mutFlipBit, indpb=0.25)
+
+# register a mutation operator with a probability to
+# flip gene sequences
+toolbox.register("mutatebig", tools.mutShuffleIndexes, indpb=0.4)
 
 # operator for selecting individuals for breeding the next
 # generation: each individual of the current generation
 # is replaced by the 'fittest' (best) of three individuals
-# drawn randomly from the current generation.
+# drawn from the best individuals from the previous gen.
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 #----------
 
 def main():
-    random.seed(42)
+    random.seed(8329292492)
 
-    # create an initial population of 300 individuals (where
+    # create an initial population of 75 individuals (where
     # each individual is a list of integers)
 
-    pop = toolbox.population(n=60)
+    pop = toolbox.population(n=80)
+
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -195,8 +208,10 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.55, 0.25, 30
-
+    CXPB, MUTPB, NGEN = 0.6, 0.3, 50
+    # add the hall of fame to keep the best individual
+    hof = tools.HallOfFame(1)
+    
     print("Start of evolution")
 
     # Evaluate the entire population
@@ -206,6 +221,7 @@ def main():
 
     print("  Evaluated %i individuals" % len(pop))
 
+    freshcount = 0
     # Begin the evolution
     for g in range(NGEN):
         print("-- Generation %i --" % g)
@@ -228,11 +244,25 @@ def main():
                 del child2.fitness.values
 
         for mutant in offspring:
-
-            # mutate an individual with probability MUTPB
-            if random.random() < MUTPB:
-                toolbox.mutate(mutant)
+            # small chance to flip genes instead of just mutating
+            # this is a big change
+            if random.random() < 0.08:
+                toolbox.mutatebig(mutant)
                 del mutant.fitness.values
+            else:
+                # mutate an individual with probability MUTPB
+                if random.random() < MUTPB:
+                    toolbox.mutate(mutant)
+                    del mutant.fitness.values
+
+        
+        # every 7 generations add 10 new random
+        # this is to help get out of stagnent pools
+        if freshcount == 7:
+            offspring.extend(toolbox.population(n=10))
+            freshcount = 0
+        else:
+            freshcount += 1
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -244,10 +274,14 @@ def main():
 
         # The population is entirely replaced by the offspring
         pop[:] = offspring
-
+        
         # Gather all the fitnesses in one list and print the stats
         fits = [ind.fitness.values[0] for ind in pop]
-
+        
+        # Update the hall of fame
+        hof.update(pop)
+        
+        # Print stats
         length = len(pop)
         mean = sum(fits) / length
         sum2 = sum(x*x for x in fits)
@@ -257,6 +291,7 @@ def main():
         print("  Max %s" % max(fits))
         print("  Avg %s" % mean)
         print("  Std %s" % std)
+        
         # Save progress
         best_ind = tools.selBest(pop, 1)[0]
         f = open('E:\\Dropbox\\_WorkingDir\\GA-PMR\\Solutions\\' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w+')
@@ -272,11 +307,10 @@ def main():
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
     # Save best individual final
-    f = open('E:\\Dropbox\\_WorkingDir\\GA-PMR\\Solutions\\' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_Final', 'w+')
+    f = open('E:\\Dropbox\\_WorkingDir\\GA-PMR\\Solutions\\' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final', 'w+')
     f.write("%s\n" % (best_ind))
     f.write("  Max %s" % max(fits))
     f.close()
-
 
 if __name__ == "__main__":
     main()

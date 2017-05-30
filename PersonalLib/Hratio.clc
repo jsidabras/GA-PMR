@@ -1,0 +1,47 @@
+$begin 'Named_Expression'
+	Name('H1r')
+	Expression('*(Sqrt(Real(*(Conj(Dot(<Hx,Hy,Hz>, <(0, 0), (1, 0), (0, 1)>)), Dot(<Hx,Hy,Hz>, <(0, 0), (1, 0), (0, 1)>)))), 0.5)')
+	NameOfExpression('<Hx,Hy,Hz>')
+	ComplexVector_Constant(0, 0, 1, 0, 0, 1)
+	Operation('Dot')
+	Operation('Conj')
+	NameOfExpression('<Hx,Hy,Hz>')
+	ComplexVector_Constant(0, 0, 1, 0, 0, 1)
+	Operation('Dot')
+	Operation('*')
+	Operation('Real')
+	Operation('Sqrt')
+	Scalar_Constant(0.5)
+	Operation('*')
+$end 'Named_Expression'
+$begin 'Named_Expression'
+	Name('H1rMax')
+	Expression('Maximum(Volume(Sample), H1r)')
+	NameOfExpression('H1r')
+	EnterVolume('Sample')
+	Operation('VolumeValue')
+	Operation('Maximum')
+$end 'Named_Expression'
+$begin 'Named_Expression'
+	Name('NIntH')
+	Expression('*(Integrate(Volume(Sample), H1r), 1/(Integrate(Volume(Sample), 1)))')
+	NameOfExpression('H1r')
+	EnterVolume('Sample')
+	Operation('VolumeValue')
+	Operation('Integrate')
+	Scalar_Constant(1)
+	EnterVolume('Sample')
+	Operation('VolumeValue')
+	Operation('Integrate')
+	Operation('1/')
+	Operation('*')
+$end 'Named_Expression'
+$begin 'Named_Expression'
+	Name('Hratio')
+	Expression('1/(*(H1rMax, 1/(NIntH)))')
+	NameOfExpression('H1rMax')
+	NameOfExpression('NIntH')
+	Operation('1/')
+	Operation('*')
+	Operation('1/')
+$end 'Named_Expression'

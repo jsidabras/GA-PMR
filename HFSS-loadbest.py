@@ -9,7 +9,7 @@ import argparse
 import hycohanz as hfss
 
 [oAnsoftApp, oDesktop] = hfss.setup_interface()
-oProject = hfss.get_active_project(oDesktop)
+oProject = oDesktop.SetActiveProject("GA_PlanarResonator")
 oDesign = hfss.set_active_design(oProject, 'HFSSDesign1')
 oEditor = hfss.set_active_editor(oDesign)
 oFieldsReporter = hfss.get_module(oDesign, 'FieldsReporter')
@@ -21,8 +21,6 @@ args = parser.parse_args()
 f = open(args.file, 'r')
 loadthing = f.readline()
 f.close()
-
-print(loadthing)
 
 dump = loadthing.strip("[")
 dump = dump.rstrip()
@@ -60,4 +58,4 @@ oDesktop.ClearMessages("", "", 3)
     # print("Simulation Error")
 
 
-oProject.Save()
+#oProject.Save()

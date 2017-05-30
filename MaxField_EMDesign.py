@@ -15,7 +15,7 @@
 
 
 #    Highly modified by Jason W. Sidabras jason.sidabras@cec.mpg.de
-#    maximize H field in a sample and maximize the uniformity
+#    maximize H field in a sample
 #    this is used to find non-obvious solutions to the planar micro resonator
 #    turns elements to silver (1) or vacuum (0)
 
@@ -25,8 +25,17 @@ from deap import base
 from deap import creator
 from deap import tools
 
-import hycohanz as hfss
 import shutil
+import os
+import re
+import subprocess
+
+import hycohanz as hfss
+
+
+mat_re = re.compile("0.0000000000000000e\+000 0.0000000000000000e\+000 1.0000000000000005e-004 (?P<num>\W.+)")
+
+
 from datetime import datetime
 startTime = datetime.now()
 
@@ -47,39 +56,31 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 #                         define 'individual' to be an individual
 #                         consisting of 2490 'attr_bool' elements ('genes')
 toolbox.register("individual", tools.initRepeat, creator.Individual,
-    toolbox.attr_bool, 1767)
+    toolbox.attr_bool, 2264)
 
 # define the population to be a list of individuals
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 # colorize the solution for visual of generation
-def colorize_best(individual):
-    [oAnsoftApp, oDesktop] = hfss.setup_interface()
-    oProject = hfss.get_active_project(oDesktop)
-    oDesign = hfss.set_active_design(oProject, 'HFSSDesign1')
-    oEditor = hfss.set_active_editor(oDesign)
 
-    index = 0
-    Vac = []
-    Silv = []
-    for i in individual:
-        if i == 1:
-            Silv.append("Elm_"+str(index))
-        else:
-            Vac.append("Elm_"+str(index))
-        index += 1  
-    
-    hfss.assign_White(oEditor, Vac)
-    hfss.assign_Orange(oEditor, Silv)
-    
-# the goal ('fitness') function to be maximized
 def evalOneMax(individual):
+    # Solutions results purge with shutil.rmtree
+    # file = "B:\\GA_modify2D.aedtresults" 
+    # try:
+        # shutil.rmtree(file)
+    # except:
+        # pass
+    # Purge files that are no longer needed for newest solution
+    files = ["B:\\tmp.fld"]
+    for file in files:
+        try:
+            os.remove(file)
+        except:
+            pass
     [oAnsoftApp, oDesktop] = hfss.setup_interface()
     oProject = hfss.get_active_project(oDesktop)
-    oDesign = hfss.set_active_design(oProject, 'HFSSDesign1')
-    oEditor = hfss.set_active_editor(oDesign)
-    oFieldsReporter = hfss.get_module(oDesign, 'FieldsReporter')
-    oSolution = oDesign.GetModule("Solutions")
+    oDesign = oProject.SetActiveDesign("EMDesign1")
+    oEditor = oDesign.SetActiveEditor("Layout")
 
     # Shut off autosave to minimize the .adresults folder
     oDesktop.EnableAutoSave(False)
@@ -90,115 +91,62 @@ def evalOneMax(individual):
     for i in individual:
         if i == 1:
             Silv.append("Elm_"+str(index))
+
         else:
             Vac.append("Elm_"+str(index))
+
         index += 1
 
-    # Check if list is empty
-    if Vac:
-        #hfss.assign_IsModel(oEditor, Vac, IsModel=False)
-        hfss.assign_material(oEditor, Vac, MaterialName="vacuum", SolveInside=True)
-    if Silv:
-        # hfss.assign_IsModel(oEditor, Silv, IsModel=True)
-        hfss.assign_material(oEditor, Silv, MaterialName="pec", SolveInside=False)
+    command_thing = ["NAME:AllTabs"]
+    to = ["NAME:PropServers"]
+    to.extend(Silv)
+    g_thing = ["NAME:BaseElementTab"]
+    g_thing.append(to)
+    g_thing.append(["NAME:ChangedProps",["NAME:PlacementLayer","Value:=", "Top"]])
+    command_thing.append(g_thing)
+    oEditor.ChangeProperty(command_thing)        
 
-    oDesktop.ClearMessages("", "", 3)
-    # Purge History to minimize the solution time and minimize the .adresults folder
-    # Is this needed every time? Modeler -> PurgeHistory
-    #oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Silv, "NewPartsModelFlag:=", "Model"])
-    #oEditor.PurgeHistory(["NAME:Selections", "Selections:=", Vac, "NewPartsModelFlag:=", "Model"])
-
-    # Solutions results purge with shutil.rmtree
-    folder = "B:\\GA_PlanarResonator.aedtresults\\HFSSDesign1.results"
-    shutil.rmtree(folder)
-    # Try to solve, if there is an error send it to zero. 
-    # ISSUE: If the RAMDisk is full this gives an error and sends everything to zero
-    # should be fixed with the PurgeHistory and AutoSave off... ??
-    # Autosave off helps, but shutil.rmtree is needed
-    try:
-        oDesign.Analyze("Setup1")
-    except:
-        print("Simulation Error Set Fitness -10000, ")
-        return -10000, 
-        
-    oFieldsReporter.CalcStack('clear')
-    # Load the pre solved calculator expressions. Some will delete when Fastlist is deleted
-    # Remember to set Ple to zero unless you are solving for the losses in the substrate
-    #oFieldsReporter.LoadNamedExpressions("E:\\MPI\\Maxwell\\Projects\\PersonalLib\\_Signal_14 - Xband - ICE.clc", "Fields", ["ImDieHold", "ImDieSam", "Frq", "H1r", "H1rMax", "IntH1r2dVs"])
-    oFieldsReporter.CopyNamedExprToStack("IntH1r2dVs")
-    # Is there a solution present? If so clc_eval if not, run the Analyze again
-    # if there is still no solution, send it to zero
-    if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
-        hfss.clc_eval(
-            oFieldsReporter,
-            'Setup1',
-            'LastAdaptive',
-            9.7e9,
-            0,
-            {},
-        )
-    else:
-        oDesign.Analyze("Setup1")
-        try:
-            hfss.clc_eval(
-                oFieldsReporter,
-                'Setup1',
-                'LastAdaptive',
-                9.7e9,
-                0,
-                {},
-            )
-        except:
-            print("Simulation Error Set Fitness -1000, ")
-            return -1000, 
-    outH = hfss.get_top_entry_value(
-        oFieldsReporter,
-        'Setup1',
-        'LastAdaptive',
-        9.7e9,
-        0,
-        {},
-    )
-
-    #oFieldsReporter.CopyNamedExprToStack("EdVs")
-    # Is there a solution present? If so clc_eval if not, run the Analyze again
-    # if there is still no solution, send it to zero
-    # if oSolution.HasFields("Setup1:LastAdaptive", "x_size=2mm") == 1:
-        # hfss.clc_eval(
-            # oFieldsReporter,
-            # 'Setup1',
-            # 'LastAdaptive',
-            # 9.7e9,
-            # 0,
-            # {},
-        # )
-    # else:
-        # oDesign.Analyze("Setup1")
-        # try:
-            # hfss.clc_eval(
-                # oFieldsReporter,
-                # 'Setup1',
-                # 'LastAdaptive',
-                # 9.7e9,
-                # 0,
-                # {},
-            # )
-        # except:
-            # print("Simulation Error Set Fitness -1, ")
-            # return -1, 
-    # outE = hfss.get_top_entry_value(
-        # oFieldsReporter,
-        # 'Setup1',
-        # 'LastAdaptive',
-        # 9.7e9,
-        # 0,
-        # {},
-    # )
+    command_thing = ["NAME:AllTabs"]
+    to = ["NAME:PropServers"]
+    to.extend(Vac)
+    g_thing = ["NAME:BaseElementTab"]
+    g_thing.append(to)
+    g_thing.append(["NAME:ChangedProps",["NAME:PlacementLayer","Value:=", "Gnd"]])
+    command_thing.append(g_thing)
+    oEditor.ChangeProperty(command_thing)        
     
-    # print(outH[0] + ", " + outE[0])
-    print(outH[0])
-    print("Time: " + str(datetime.now() - startTime))
-    return float(outH[0]),
+    # cmdCommand = "ansysedt.exe -WaitForLicense -RunScriptAndExit Calc_output_EMDesign.py -BatchSave Test.aedt"   #specify your cmd command
+    # process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
+    # output, error = process.communicate()
+
+    oDesign.AnalyzeAll()
+    oModule = oDesign.GetModule("FieldsReporter")
+    oModule.EnterQty("H")
+    oModule.CalcStack("push")
+    oModule.CalcOp("Conj")
+    oModule.CalcOp("Dot")
+    oModule.CalcOp("Real")
+    try:
+        oModule.ExportOnGrid("B:\\tmp.fld", ["0meter", "0meter", "-1mm"], ["0meter", "0meter", "1mm"], ["0.1meter", "0.1meter", "0.1mm"], "HFSS Setup 1 : Last Adaptive", 
+            [
+                "F:="			, "9.7GHz",
+                "Phase:="		, "0deg"
+            ], True, "Cartesian", ["0meter", "0meter", "0meter"], False)
+    except:
+        print ("No tmp.fld, failed solution?")
+        return 0,    
+    try:
+        with open("B:\\tmp.fld", "r") as out_file:
+            for line in out_file:
+                if mat_re.search(line):
+                    output = mat_re.search(line).group('num')
+                    print(output)
+        
+
+        return float(output),
+    except:
+        print ("No tmp.fld, failed solution?")
+        return 0,
 
 #----------
 # Operator registration
@@ -227,7 +175,7 @@ def main():
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
 
-    pop = toolbox.population(n=40)
+    pop = toolbox.population(n=300)
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -236,7 +184,7 @@ def main():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 0.55, 0.3, 30
+    CXPB, MUTPB, NGEN = 0.55, 0.25, 30
 
     print("Start of evolution")
 
@@ -300,12 +248,11 @@ def main():
         print("  Std %s" % std)
         # Save progress
         best_ind = tools.selBest(pop, 1)[0]
-        f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w')
+        f = open('E:\\Dropbox\\_WorkingDir\\GA-PMR\\Solutions\\' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_' + str(g), 'w+')
         f.write("%s\n" % (best_ind))
         f.write("  Max %s" % max(fits))
         f.close()
-        # Colorize the best solution 
-        # colorize_best(best_ind)
+
         print("Time: " + str(datetime.now() - startTime))
 
     print("-- End of (successful) evolution --")
@@ -314,13 +261,11 @@ def main():
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     print(datetime.now() - startTime)
     # Save best individual final
-    f = open('./Solutions/' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Final', 'w')
+    f = open('E:\\Dropbox\\_WorkingDir\\GA-PMR\\Solutions\\' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '_best_individual_Gen_Final', 'w+')
     f.write("%s\n" % (best_ind))
     f.write("  Max %s" % max(fits))
     f.close()
-    
-    # Colorize the final best individual 
-    colorize_best(best_ind)
+
 
 if __name__ == "__main__":
     main()
