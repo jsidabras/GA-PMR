@@ -65,76 +65,27 @@ toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 def evalOneMax(individual):
     # Solutions results purge with shutil.rmtree
-    # file = "B:\\GA_modify2D.aedtresults" 
-    # try:
-        # shutil.rmtree(file)
-    # except:
-        # pass
+    file = "B:\\Test.aedtresults" 
+    try:
+        shutil.rmtree(file)
+    except:
+        pass
     # Purge files that are no longer needed for newest solution
-    files = ["B:\\tmp.fld"]
+    files = ["B:\\tmp.fld","B:\\Test.aedt.lock","B:\\individual.tmp"]
     for file in files:
         try:
             os.remove(file)
         except:
             pass
-    [oAnsoftApp, oDesktop] = hfss.setup_interface()
-    oProject = hfss.get_active_project(oDesktop)
-    oDesign = oProject.SetActiveDesign("EMDesign1")
-    oEditor = oDesign.SetActiveEditor("Layout")
 
-    # Shut off autosave to minimize the .adresults folder
-    oDesktop.EnableAutoSave(False)
-
-    index = 0
-    Vac = []
-    Silv = []
-    for i in individual:
-        if i == 1:
-            Silv.append("Elm_"+str(index))
-
-        else:
-            Vac.append("Elm_"+str(index))
-
-        index += 1
-
-    command_thing = ["NAME:AllTabs"]
-    to = ["NAME:PropServers"]
-    to.extend(Silv)
-    g_thing = ["NAME:BaseElementTab"]
-    g_thing.append(to)
-    g_thing.append(["NAME:ChangedProps",["NAME:PlacementLayer","Value:=", "Top"]])
-    command_thing.append(g_thing)
-    oEditor.ChangeProperty(command_thing)        
-
-    command_thing = ["NAME:AllTabs"]
-    to = ["NAME:PropServers"]
-    to.extend(Vac)
-    g_thing = ["NAME:BaseElementTab"]
-    g_thing.append(to)
-    g_thing.append(["NAME:ChangedProps",["NAME:PlacementLayer","Value:=", "Gnd"]])
-    command_thing.append(g_thing)
-    oEditor.ChangeProperty(command_thing)        
+    f = open('B:\\individual.tmp', 'w+')
+    f.write(str(individual))
+    f.close()            
     
-    # cmdCommand = "ansysedt.exe -WaitForLicense -RunScriptAndExit Calc_output_EMDesign.py -BatchSave Test.aedt"   #specify your cmd command
-    # process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
-    # output, error = process.communicate()
+    cmdCommand = "ansysedt.exe -ng -WaitForLicense -RunScriptAndExit Calc_output_EMDesign.py -BatchSave Test.aedt"   #specify your cmd command
+    process = subprocess.Popen(cmdCommand.split(), stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
 
-    oDesign.AnalyzeAll()
-    oModule = oDesign.GetModule("FieldsReporter")
-    oModule.EnterQty("H")
-    oModule.CalcStack("push")
-    oModule.CalcOp("Conj")
-    oModule.CalcOp("Dot")
-    oModule.CalcOp("Real")
-    try:
-        oModule.ExportOnGrid("B:\\tmp.fld", ["0meter", "0meter", "-1mm"], ["0meter", "0meter", "1mm"], ["0.1meter", "0.1meter", "0.1mm"], "HFSS Setup 1 : Last Adaptive", 
-            [
-                "F:="			, "9.7GHz",
-                "Phase:="		, "0deg"
-            ], True, "Cartesian", ["0meter", "0meter", "0meter"], False)
-    except:
-        print ("No tmp.fld, failed solution?")
-        return 0,    
     try:
         with open("B:\\tmp.fld", "r") as out_file:
             for line in out_file:
